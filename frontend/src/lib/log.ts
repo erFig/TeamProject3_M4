@@ -19,16 +19,30 @@ export async function logText(
 ): Promise<LogResult> {
   const r: LogResult = { text: "", saved: null, batchId: null };
   try {
-    await stream("/api/chat", { message: text, mode: "log", session_id: sessionId, checkin: opts.checkin, context_hint: opts.contextHint },
+    await stream(
+      "/api/chat",
+      {
+        message: text,
+        mode: "log",
+        session_id: sessionId,
+        checkin: opts.checkin,
+        context_hint: opts.contextHint,
+      },
       (e) => {
         const ev = e as { type: string; [k: string]: any };
         if (ev.type === "session") sessionId = ev.session_id;
-        else if (ev.type === "token") { r.text += ev.text; onLive?.(r.text); }
-        else if (ev.type === "replace") { r.text = ev.text; onLive?.(r.text); }
-        else if (ev.type === "card" && ev.kind === "saved") r.saved = ev.data as Saved;
+        else if (ev.type === "token") {
+          r.text += ev.text;
+          onLive?.(r.text);
+        } else if (ev.type === "replace") {
+          r.text = ev.text;
+          onLive?.(r.text);
+        } else if (ev.type === "card" && ev.kind === "saved")
+          r.saved = ev.data as Saved;
         else if (ev.type === "done") r.batchId = ev.batch_id ?? null;
         else if (ev.type === "error") r.error = ev.message;
-      });
+      },
+    );
   } catch (err) {
     r.error = (err as Error).message;
   }

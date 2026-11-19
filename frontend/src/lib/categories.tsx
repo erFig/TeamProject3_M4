@@ -1,10 +1,29 @@
 import {
-  Banknote, Home, Zap, Shield, CreditCard, GraduationCap, ShoppingBasket, Coffee, Fuel, ShoppingBag,
-  Ticket, Repeat, HeartPulse, Scissors, Landmark, ArrowLeftRight, CircleDashed, type LucideIcon,
+  Banknote,
+  Home,
+  Zap,
+  Shield,
+  CreditCard,
+  GraduationCap,
+  ShoppingBasket,
+  Coffee,
+  Fuel,
+  ShoppingBag,
+  Ticket,
+  Repeat,
+  HeartPulse,
+  Scissors,
+  Landmark,
+  ArrowLeftRight,
+  CircleDashed,
+  type LucideIcon,
 } from "lucide-react";
 
 // One icon and one hue per category, used everywhere a category appears.
-export const CAT: Record<string, { label: string; icon: LucideIcon; hue: string }> = {
+export const CAT: Record<
+  string,
+  { label: string; icon: LucideIcon; hue: string }
+> = {
   income: { label: "Income", icon: Banknote, hue: "#1F8A63" },
   housing: { label: "Rent & housing", icon: Home, hue: "#5B6CD6" },
   utilities: { label: "Utilities & phone", icon: Zap, hue: "#3F8FC4" },
@@ -26,13 +45,26 @@ export const CAT: Record<string, { label: string; icon: LucideIcon; hue: string 
 
 export const catInfo = (id: string) => CAT[id] ?? CAT.other;
 
-export function CatIcon({ id, size = 18, className = "" }: { id: string; size?: number; className?: string }) {
+export function CatIcon({
+  id,
+  size = 18,
+  className = "",
+}: {
+  id: string;
+  size?: number;
+  className?: string;
+}) {
   const c = catInfo(id);
   const Icon = c.icon;
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-xl ${className}`}
-      style={{ background: `${c.hue}1f`, color: c.hue, width: size + 16, height: size + 16 }}
+      style={{
+        background: `${c.hue}1f`,
+        color: c.hue,
+        width: size + 16,
+        height: size + 16,
+      }}
       aria-hidden
     >
       <Icon size={size} strokeWidth={2.1} />
