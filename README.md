@@ -162,7 +162,7 @@ longer needed. The developer section is hidden when logging is disabled.
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Conversation-first React workspace** replaces the command line: Home, Activity, Plan, Settings and isolated examples                                              | M3 could only be used from a terminal, and early web prototypes felt fragmented                                            | A user can log information, ask for advice and see the current money picture in one place                                                    |
 | **One server that stays running**, so the MCP server and ChromaDB load once at startup                                                                              | In M3 every question relaunched the tool server and reloaded the embedding model                                           | Startup cost is paid once (about 2 s) instead of on every question                                                                           |
-| **Pre-computed snapshot** handed to the agents, and **routing done in code** instead of a handoff                                                                   | In M3 a plan question took about 11 model calls and 22,000 tokens                                                          | Simple questions now take about 2 to 5 s with 0 or 1 tool calls. Plans take about 11 to 15 s                                                 |
+| **Pre-computed snapshot** handed to the agents, and **routing done in code** instead of a handoff                                                                   | In M3 a plan question took about 11 model calls and 22,000 tokens                                                          | Simple questions need 0 or 1 tool calls. Speed depends on how busy NRP is: usually 2 to 5 s, but 11 to 38 s for questions and 35 to 47 s for plans in the Nov 18 evaluation run (see the measured results below)                                                 |
 | **SSE response channel** with a clear loading state and safe calculated fallback                                                                                    | The M3 demo showed a long blank wait and model latency varies                                                              | The interface stays responsive and never exposes partial, unverified financial text                                                          |
 | **Real data**: CSV import for most banks, plus automatic detection of recurring bills, paydays and income swings                                                    | M3 used one fixed sample file with a frozen date                                                                           | Works on a real bank export. Demo dates now follow today                                                                                     |
 | **Bookkeeper agent: tell it in plain words** ("spent about $40 the last couple days", "I get paid every 2 weeks but it changes"), with a confirmation card and Undo | Most students and gig workers won't download a bank file every day, but they will type a sentence                          | The app stays current between uploads, and it works with no bank file at all                                                                 |
@@ -178,6 +178,29 @@ longer needed. The developer section is hidden when logging is disabled.
 | **Prompt-injection check** and sanitizing of uploaded text                                                                                                          | Ch 8 threat model: bank descriptions are untrusted                                                                         | Blocks "ignore your instructions" attempts                                                                                                   |
 | **M3 bug fixed**: a plan's category cap is never looser than last week's cap                                                                                        | Known limitation #1 in M3                                                                                                  | Covered by a unit test                                                                                                                       |
 | Grounding check accepts whole-dollar rounding ("$27" for 27.40)                                                                                                     | People talk in round numbers                                                                                               | Wrong cents and invented amounts are still flagged                                                                                           |
+
+### Measured impact on the 10 evaluation cases (M3 vs M4)
+
+Same 10 inputs and the same fake sample data (date pinned to 2026-09-28). M3 results: `docs/m3/latest_results.md`
+(Oct 27 run). M4 results: `tests/results/m4_eval_results.md` and `.csv` (Nov 18 run, made with `tests/run_m4_eval.py`).
+Expected answers were not rewritten to make M4 pass.
+
+| Measure | M3 | M4 | What it shows |
+| ------- | -- | -- | ------------- |
+| Cases passed | 10/10 (100%) | 6/10 (60%) | We report the drop as it is. Three of the four M4 failures (TC1, TC2, TC5) are cases where the M4 answer is correct and the M3 expectation is out of date. One (TC7) is a real wording miss in a plan |
+| Tool calls for a fact question (TC1 to TC5) | 1 to 2 | 0 | The snapshot hands the numbers to the agent, so no tool call is needed |
+| Tool calls for a weekly plan (TC6, TC7) | 8 | 1 | Code routing replaces the long multi-tool handoff |
+| Plans reviewed before the user sees them | none | 2 of 2, both scored 9/10 by the Critic | New Critic agent |
+| Automated tests that need no model | 31 | 106 | +75 tests |
+| Safety cases (TC9 investing, TC10 card number) | pass | pass | Unchanged: both still blocked before any model call |
+| Last-week plan check (TC5): dining over its cap | $5.38 (M3 skipped the plan's first day) | $45.31 (all 7 days counted) | M3 off-by-one fixed; M4 matches the sample CSV |
+| Safe to spend per day (TC2) | $39.11 | $69.10 | Deliberate change to the money rules (30-day cash flow: expected paychecks and detected bills are counted, spread over at least 14 days). It is why TC2 does not match the M3 expectation |
+| Grounding failures (wrong or invented dollar amounts) | 0 | 0 | Every dollar amount in every M4 answer matched the data |
+| Speed (this run only; M3 recorded no timings) | not recorded | questions 11 to 38 s, plans 35 to 47 s | NRP was slow during the run, and TC3 needed one retry after a timeout |
+
+Changes that the 10 cases do not cover (the purchase "How did you pay?" flow, guided setup, Undo, CSV import, the
+Bookkeeper and Categorizer agents) are checked by the 75 new automated tests and by the five user sessions, not by
+this table.
 
 ## Known limitations
 
